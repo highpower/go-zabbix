@@ -42,7 +42,7 @@ func (s *Sender) Send(metrics *Metrics) error {
 	return nil
 }
 
-func (s *Sender) setup(config Config) error {
+func (s *Sender) setup(config SenderConfig) error {
 	s.impl.Store(&senderImpl{host: config.ZabbixHost(), timeout: config.ZabbixTimeout()})
 	return nil
 }
@@ -51,12 +51,19 @@ func (s *status) String() string {
 	return fmt.Sprintf("status[response='%s',info='%s']", s.Response, s.Info)
 }
 
-func New(config Config) (Sender, error) {
+func NewSender(config SenderConfig) (Sender, error) {
 	result := Sender{}
 	if err := result.setup(config); err != nil {
 		return Sender{}, err
 	}
 	return result, nil
+}
+
+func Must(sender Sender, err error) Sender {
+	if err != nil {
+		panic(err)
+	}
+	return sender
 }
 
 func send(host string, timeout time.Duration, metrics *Metrics) (status, error) {

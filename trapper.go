@@ -7,7 +7,11 @@ import (
 	"time"
 )
 
-type VarMap[C fmt.Stringer] interface {
+type Var interface {
+	String() string
+}
+
+type VarMap[C Var] interface {
 	Name() string
 	ForEach(f func(key string, value C))
 }
@@ -35,10 +39,14 @@ type trapperImpl struct {
 	source  string
 }
 
-func (t *Trapper[C]) SendEvery(period time.Duration, vars ...VarMap[C]) (Stopper, error) {
+func (t *Trapper[C]) SendEvery(vars []VarMap[C], period time.Duration) (Stopper, error) {
 	ticker := time.NewTicker(period)
 	go t.runSend(ticker.C, vars)
 	return ticker, nil
+}
+
+func (t *Trapper[C]) SendValuesEvery(period time.Duration, vars ...VarMap[C]) (Stopper, error) {
+	return t.SendEvery(vars, period)
 }
 
 func (t *Trapper[C]) runSend(c <-chan time.Time, vars []VarMap[C]) {

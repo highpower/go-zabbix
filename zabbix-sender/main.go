@@ -39,7 +39,7 @@ func (c *config) valid() error {
 }
 
 func sendToZabbix(c *config, metric string) error {
-	sender, err := zabbix.New(c)
+	sender, err := zabbix.NewSender(c)
 	if err != nil {
 		return err
 	}
