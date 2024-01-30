@@ -7,15 +7,9 @@ import (
 	"time"
 )
 
-type Var interface {
-	String() string
-}
-
-type Func func(key string, value Var)
-
-type VarMap interface {
+type VarMap[C fmt.Stringer] interface {
 	Name() string
-	ForEach(f Func)
+	ForEach(f func(key string, value C))
 }
 
 type Logger interface {
@@ -29,7 +23,7 @@ type Stopper interface {
 	Stop()
 }
 
-type Trapper struct {
+type Trapper[C fmt.Stringer] struct {
 	prefix string
 	log    Logger
 	impl   atomic.Value
@@ -41,19 +35,19 @@ type trapperImpl struct {
 	source  string
 }
 
-func (t *Trapper) SendEvery(period time.Duration, vars ...VarMap) (Stopper, error) {
+func (t *Trapper[C]) SendEvery(period time.Duration, vars ...VarMap[C]) (Stopper, error) {
 	ticker := time.NewTicker(period)
 	go t.runSend(ticker.C, vars)
 	return ticker, nil
 }
 
-func (t *Trapper) runSend(c <-chan time.Time, vars []VarMap) {
+func (t *Trapper[C]) runSend(c <-chan time.Time, vars []VarMap[C]) {
 	for range c {
 		impl := t.impl.Load().(*trapperImpl)
 		debugf(t.log, "trapper.runSend: sending metrics to %s", impl.host)
 		metrics := NewMetrics(impl.source)
 		for _, vm := range vars {
-			vm.ForEach(func(name string, value Var) {
+			vm.ForEach(func(name string, value C) {
 				metrics.Add(fmt.Sprintf("%s.%s.%s", t.prefix, vm.Name(), name), value)
 			})
 		}
@@ -63,7 +57,7 @@ func (t *Trapper) runSend(c <-chan time.Time, vars []VarMap) {
 	}
 }
 
-func (t *Trapper) setup(config Config) error {
+func (t *Trapper[C]) setup(config Config) error {
 	if err := configValid(config); err != nil {
 		return err
 	}
@@ -72,10 +66,10 @@ func (t *Trapper) setup(config Config) error {
 	return nil
 }
 
-func NewTrapper(config UpdatableConfig, log Logger, prefix string) (Trapper, error) {
-	result := Trapper{prefix: prefix, log: log}
+func NewTrapper[C fmt.Stringer](config UpdatableConfig, log Logger, prefix string) (Trapper[C], error) {
+	result := Trapper[C]{prefix: prefix, log: log}
 	if err := result.setup(config); err != nil {
-		return Trapper{}, err
+		return Trapper[C]{}, err
 	}
 	config.WhenUpdated(func() error { return result.setup(config) })
 	return result, nil
