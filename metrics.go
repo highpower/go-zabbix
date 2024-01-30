@@ -15,10 +15,10 @@ type Metrics struct {
 }
 
 type metricBuffer struct {
-	Host  string      `json:"host"`
-	Key   string      `json:"key"`
-	Value interface{} `json:"value"`
-	Clock int64       `json:"clock"`
+	Host  string `json:"host"`
+	Key   string `json:"key"`
+	Value any    `json:"value"`
+	Clock int64  `json:"clock"`
 }
 
 type packetBuffer struct {
@@ -47,7 +47,7 @@ func (m *Metrics) Add(key string, value any) {
 }
 
 func NewMetrics(source string) Metrics {
-	return Metrics{source: source, values: make(map[string]interface{}), when: time.Now()}
+	return Metrics{source: source, values: make(map[string]any), when: time.Now()}
 }
 
 func printValueMap(m map[string]any) string {

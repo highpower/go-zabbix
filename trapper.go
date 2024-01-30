@@ -2,6 +2,7 @@ package zabbix
 
 import (
 	"fmt"
+	"reflect"
 	"sync/atomic"
 	"time"
 )
@@ -49,7 +50,7 @@ func (t *Trapper) SendEvery(period time.Duration, vars ...VarMap) (Stopper, erro
 func (t *Trapper) runSend(c <-chan time.Time, vars []VarMap) {
 	for range c {
 		impl := t.impl.Load().(*trapperImpl)
-		Debugf(t.log, "trapper.runSend: sending metrics to %s", impl.host)
+		debugf(t.log, "trapper.runSend: sending metrics to %s", impl.host)
 		metrics := NewMetrics(impl.source)
 		for _, vm := range vars {
 			vm.ForEach(func(name string, value Var) {
@@ -57,7 +58,7 @@ func (t *Trapper) runSend(c <-chan time.Time, vars []VarMap) {
 			})
 		}
 		if _, err := send(impl.host, impl.timeout, &metrics); err != nil {
-			Errorf(t.log, "trapper.runSend: %s", err.Error())
+			errorf(t.log, "trapper.runSend: %s", err.Error())
 		}
 	}
 }
@@ -81,19 +82,23 @@ func NewTrapper(config UpdatableConfig, log Logger, prefix string) (Trapper, err
 }
 
 func Stop(stopper Stopper) {
-	if stopper != nil {
+	if !isNil(stopper) {
 		stopper.Stop()
 	}
 }
 
-func Errorf(log Logger, format string, v ...any) {
-	if log != nil {
+func errorf(log Logger, format string, v ...any) {
+	if !isNil(log) {
 		log.Errorf(format, v...)
 	}
 }
 
-func Debugf(log Logger, format string, v ...any) {
-	if log != nil {
+func debugf(log Logger, format string, v ...any) {
+	if !isNil(log) {
 		log.Debugf(format, v...)
 	}
+}
+
+func isNil(v any) bool {
+	return v == nil || (reflect.TypeOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
