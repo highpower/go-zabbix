@@ -39,17 +39,19 @@ type trapperImpl struct {
 	source  string
 }
 
-func (t *Trapper[C]) SendEvery(vars []VarMap[C], period time.Duration) (Stopper, error) {
+func (t *Trapper[C]) SendEvery(period time.Duration, vars []VarMap[C]) (Stopper, error) {
 	ticker := time.NewTicker(period)
 	go t.runSend(ticker.C, vars)
 	return ticker, nil
 }
 
 func (t *Trapper[C]) SendValuesEvery(period time.Duration, vars ...VarMap[C]) (Stopper, error) {
-	return t.SendEvery(vars, period)
+	return t.SendEvery(period, vars)
 }
 
 func (t *Trapper[C]) runSend(c <-chan time.Time, vars []VarMap[C]) {
+	t.log.Infof("trapper.runSend: starting")
+	defer t.log.Infof("trapper.runSend: stopping")
 	for range c {
 		impl := t.impl.Load().(*trapperImpl)
 		debugf(t.log, "trapper.runSend: sending metrics to %s", impl.host)
