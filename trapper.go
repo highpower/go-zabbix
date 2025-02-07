@@ -50,8 +50,8 @@ func (t *Trapper[C]) SendValuesEvery(period time.Duration, vars ...VarMap[C]) (S
 }
 
 func (t *Trapper[C]) runSend(c <-chan time.Time, vars []VarMap[C]) {
-	t.log.Infof("trapper.runSend: starting")
-	defer t.log.Infof("trapper.runSend: stopping")
+	infof(t.log, "trapper.runSend: starting")
+	defer infof(t.log, "trapper.runSend: stopping")
 	for range c {
 		impl := t.impl.Load().(*trapperImpl)
 		debugf(t.log, "trapper.runSend: sending metrics to %s", impl.host)
@@ -88,6 +88,12 @@ func NewTrapper[C fmt.Stringer](config UpdatableConfig, log Logger, prefix strin
 func Stop(stopper Stopper) {
 	if !isNil(stopper) {
 		stopper.Stop()
+	}
+}
+
+func infof(log Logger, format string, v ...any) {
+	if !isNil(log) {
+		log.Infof(format, v...)
 	}
 }
 
