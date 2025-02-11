@@ -58,7 +58,9 @@ func (t *Trapper[C]) runSend(c <-chan time.Time, vars []VarMap[C]) {
 		metrics := NewMetrics(impl.source)
 		for _, vm := range vars {
 			vm.ForEach(func(name string, value C) {
-				metrics.Add(fmt.Sprintf("%s.%s.%s", t.prefix, vm.Name(), name), value)
+				key := fmt.Sprintf("%s.%s.%s", t.prefix, vm.Name(), name)
+				debugf(t.log, "trapper.runSend: adding %s=%v", key, value)
+				metrics.Add(key, value)
 			})
 		}
 		if _, err := send(impl.host, impl.timeout, &metrics); err != nil {
